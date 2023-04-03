@@ -17,7 +17,11 @@ const corsOptions = {
   },
   credentials: true,
 }
-app.use(cors(corsOptions))
+//remove cors for development
+//app.use(cors(corsOptions))
+app.use(cors({
+  origin: 'http://localhost:5173',
+}));
 app.use(express.json())
 
 
@@ -27,22 +31,31 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 const run = async () => {
   try {
-
     await client.connect()
     const database = client.db(process.env.DB_NAME)
     const collection = database.collection("products")
+    const stockCollection = database.collection("stockProducts")
     const deletedProduct = database.collection("deletedProducts")
-    console.log("Database connected");
+    
     //get all product from DB
     app.get("/products", async (req, res) => {
       const result = await collection.find({}).sort({ "company": 1 }).toArray()
       res.send(result)
     })
 
-    //add many product
+    //get all Stock product from DB
+    app.get("/stockProducts", async (req, res) => {
+      const result = await stockCollection.find({}).sort({ "company": 1 }).toArray()
+      setTimeout(() => {
+        res.send(result)
+      }, 10000)
+    })
+
+    //add products
     app.post('/addProducts', async (req, res) => {
       const product = req.body.productsCollection
       const existingProduct = product.filter(pd => pd._id)
+
       const existingProductData = existingProduct.map(pd => {
         return {
           updateOne: {
@@ -51,12 +64,15 @@ const run = async () => {
           }
         }
       })
+
       const newProduct = product.filter(pd => !pd._id)
       let response = {}
       const promises = [];
+
       if (newProduct.length > 0) {
         promises.push(collection.insertMany(newProduct))
       }
+
       if (existingProductData.length > 0) {
         promises.push(collection.bulkWrite(existingProductData))
       }
@@ -70,7 +86,60 @@ const run = async () => {
             response.modifiedCount = result.result.nModified;
           }
         });
+
         res.send(response);
+
+      }).catch((error) => {
+        res.status(500).send('Error occurred while processing the request');
+      });
+    })
+
+    //add many stockProducts
+    app.post('/addStockProduct', async (req, res) => {
+      const product = req.body.productsCollection
+      const existingProduct = product.filter(pd => pd._id)
+
+      const existingProductData = existingProduct.map(pd => {
+        return {
+          updateOne: {
+            filter: { _id: ObjectId(pd._id) },
+            update: { $set: { name: pd.name, 
+              label: pd.label, 
+              quantity: pd.quantity, 
+              company: pd.company, 
+              price: pd.price, 
+              invoiceDiscount: pd.insertedCount,
+              extraDiscount : pd.extraDiscount, 
+              updated_at: pd.updated_at, 
+              updated_by: pd.updated_by } },
+          }
+        }
+      })
+
+      const newProduct = product.filter(pd => !pd._id)
+      let response = {}
+      const promises = [];
+
+      if (newProduct.length > 0) {
+        promises.push(stockCollection.insertMany(newProduct))
+      }
+
+      if (existingProductData.length > 0) {
+        promises.push(stockCollection.bulkWrite(existingProductData))
+      }
+
+      Promise.all(promises).then((results) => {
+        results.forEach((result) => {
+          if (result.insertedCount) {
+            response.insertedCount = result.insertedCount;
+          }
+          if (result?.result?.nModified) {
+            response.modifiedCount = result.result.nModified;
+          }
+        });
+
+        res.send(response);
+
       }).catch((error) => {
         res.status(500).send('Error occurred while processing the request');
       });
@@ -84,7 +153,7 @@ const run = async () => {
       res.send(result)
     })
 
-    //delete many item product
+    //delete many product
     app.delete('/product', async (req, res) => {
       const query = req.body
       const data = query.map(pd => {
@@ -100,7 +169,6 @@ const run = async () => {
     app.put('/update', async (req, res) => {
       const query = req.body
 
-      // make an array for bulk update
       const data = query.map(pd => {
         return {
           updateOne: {
@@ -109,11 +177,11 @@ const run = async () => {
           }
         }
       })
+
       const result = await collection.bulkWrite(data)
       res.send(result)
-    })
 
-    // find by sorting
+    })
 
     //update status
     app.put('/product/:id', async (req, res) => {
@@ -152,6 +220,7 @@ const run = async () => {
       res.send(result)
 
     })
+    
   } catch (error) {
     console.log(error);
     process.exit(1)
