@@ -37,7 +37,7 @@ const run = async () => {
     const stockCollection = database.collection("stockProducts")
 
     //get all product from DB ** working
-    app.get("/products", async (req, res) => {
+    app.get("/getProducts", async (req, res) => {
       const result = await collection.find({}).sort({ "company": 1 }).toArray()
       res.send(result)
     })
@@ -45,10 +45,10 @@ const run = async () => {
     //add products to DB ** working
     app.post('/addProducts', async (req, res) => {
       const products = req.body.productsCollection
-     
+
       let modifiedCount = 0;
       let insertedCount = 0;
-      
+
       for (const pd of products) {
         const filter = { _id: ObjectId(pd._id) };
         const options = { upsert: true };
@@ -57,7 +57,7 @@ const run = async () => {
         }
         const update = { $set: pd }
         const result = await collection.updateOne(filter, update, options);
-        
+
         if (result.upsertedCount > 0) {
           insertedCount++;
         } else if (result.modifiedCount > 0) {
@@ -67,107 +67,23 @@ const run = async () => {
       res.send({ modifiedCount, insertedCount });
     })
 
-       //delete many product ** need to change the url && working
-       app.delete('/product', async (req, res) => {
-        const query = req.body
-        const data = query.map(pd => {
-          return ObjectId(pd._id)
-        })
-  
-        const result = await collection.deleteMany({ _id: { $in: data } })
-        res.send(result)
-      })
-  
-  
-      //update many items ** need to change the url && working
-      app.put('/update', async (req, res) => {
-        const query = req.body
-  
-        const data = query.map(pd => {
-          return {
-            updateOne: {
-              filter: { _id: ObjectId(pd._id) },
-              update: { $set: { status: pd.status } }
-            }
-          }
-        })
-  
-        const result = await collection.bulkWrite(data)
-        res.send(result)
-  
+    //delete many product ** working
+    app.delete('/deleteProducts', async (req, res) => {
+      const query = req.body
+      const data = query.map(pd => {
+        return ObjectId(pd._id)
       })
 
-    //delete a product ** i think did't need this
-    app.delete('/product/:id', async (req, res) => {
-      const query = req.params.id
-      const id = { _id: ObjectId(query) }
-      const result = await collection.deleteOne(id)
+      const result = await collection.deleteMany({ _id: { $in: data } })
       res.send(result)
-    })
-
-     //update status ** i think did't need this
-     app.put('/product/:id', async (req, res) => {
-      const params = req.params.id
-      const query = req.query.status
-
-      const id = { _id: ObjectId(params) }
-      const updateDoc = {
-        $set: {
-          status: query
-        },
-      };
-      const result = await collection.updateOne(id, updateDoc)
-      res.send(result)
-    })
-
-    //update quantity status ** i think did't need this
-    app.put('/productQuantity/:id', async (req, res) => {
-      const params = req.params.id
-      const query = req.query.quantity
-      const id = { _id: ObjectId(params) }
-      const updateDoc = {
-        $set: {
-          quantity: query
-        },
-      };
-      const result = await collection.updateOne(id, updateDoc)
-      res.send(result)
-    })
-
-    //update product info ** i think did't need this
-    app.put('/productUpdate', async (req, res) => {
-      const pd = req.body
-      const productId = pd._id
-      const id = { _id: ObjectId(productId) }
-      const updateDoc = {
-        $set: {
-          name: pd.name,
-          label: pd.label,
-          quantity: pd.quantity,
-          company: pd.company,
-          updated_at: pd.updated_at,
-          updated_by: pd.updated_by
-        },
-      };
-      const result = await collection.updateOne(id, updateDoc)
-      res.send(result)
-    })
-
-    //find by company name ** i think did't need this
-    app.get('/products/:company', async (req, res) => {
-      const query = req.params.company
-      const company = { company: (query) }
-      const result = await collection.find(company).sort({ "name": 1 }).toArray()
-      res.send(result)
-
     })
 
     /*------- all stock product api --------*/
 
     //get all Stock product from DB ** working
-    app.get("/stockProducts", async (req, res) => {
+    app.get("/getStockProducts", async (req, res) => {
       const result = await stockCollection.find({}).sort({ "company": 1 }).toArray()
-        res.send(result)
+      res.send(result)
     })
 
     //add many stockProducts ** working
@@ -175,7 +91,7 @@ const run = async () => {
       const products = req.body.productsCollection
       let modifiedCount = 0;
       let insertedCount = 0;
-      
+
       for (const pd of products) {
         const filter = { _id: ObjectId(pd._id) };
         const options = { upsert: true };
@@ -184,7 +100,7 @@ const run = async () => {
         }
         const update = { $set: pd }
         const result = await stockCollection.updateOne(filter, update, options);
-        
+
         if (result.upsertedCount > 0) {
           insertedCount++;
         } else if (result.modifiedCount > 0) {
