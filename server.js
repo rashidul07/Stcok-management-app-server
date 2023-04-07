@@ -38,13 +38,21 @@ const run = async () => {
 
     //get all product from DB ** working
     app.get("/getProducts", async (req, res) => {
-      const result = await collection.find({}).sort({ "company": 1 }).toArray()
-      res.send(result)
+      //get params from url
+      const type = req.query?.type
+      if (type === 'product') {
+        const result = await collection.find({}).sort({ "company": 1 }).toArray()
+        res.send(result)
+      } else if (type === 'stock') {
+        const result = await stockCollection.find({}).sort({ "company": 1 }).toArray()
+        res.send(result)
+      }
     })
 
     //add products to DB ** working
     app.post('/addProducts', async (req, res) => {
       const products = req.body.productsCollection
+      const type = req.query?.type
 
       let modifiedCount = 0;
       let insertedCount = 0;
@@ -56,7 +64,13 @@ const run = async () => {
           delete pd._id;
         }
         const update = { $set: pd }
-        const result = await collection.updateOne(filter, update, options);
+
+        let result;
+        if(type === 'product'){
+          result = await collection.updateOne(filter, update, options);
+        } else if(type === 'stock'){
+          result = await stockCollection.updateOne(filter, update, options);
+        }
 
         if (result.upsertedCount > 0) {
           insertedCount++;
@@ -70,44 +84,17 @@ const run = async () => {
     //delete many product ** working
     app.delete('/deleteProducts', async (req, res) => {
       const query = req.body
+      const type = req.query?.type
       const data = query.map(pd => {
         return ObjectId(pd._id)
       })
-
-      const result = await collection.deleteMany({ _id: { $in: data } })
-      res.send(result)
-    })
-
-    /*------- all stock product api --------*/
-
-    //get all Stock product from DB ** working
-    app.get("/getStockProducts", async (req, res) => {
-      const result = await stockCollection.find({}).sort({ "company": 1 }).toArray()
-      res.send(result)
-    })
-
-    //add many stockProducts ** working
-    app.post('/addStockProduct', async (req, res) => {
-      const products = req.body.productsCollection
-      let modifiedCount = 0;
-      let insertedCount = 0;
-
-      for (const pd of products) {
-        const filter = { _id: ObjectId(pd._id) };
-        const options = { upsert: true };
-        if (pd.hasOwnProperty('_id')) {
-          delete pd._id;
-        }
-        const update = { $set: pd }
-        const result = await stockCollection.updateOne(filter, update, options);
-
-        if (result.upsertedCount > 0) {
-          insertedCount++;
-        } else if (result.modifiedCount > 0) {
-          modifiedCount++;
-        }
+      let result;
+      if(type === 'product'){
+        result = await collection.deleteMany({ _id: { $in: data } })
+      } else if(type === 'stock'){
+        result = await stockCollection.deleteMany({ _id: { $in: data } })
       }
-      res.send({ modifiedCount, insertedCount });
+      res.send(result)
     })
 
   } catch (error) {
