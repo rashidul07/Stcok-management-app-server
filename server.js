@@ -52,6 +52,63 @@ const run = async () => {
     })
 
     //add products to DB ** working
+    // app.post('/addProducts', async (req, res) => {
+    //   const products = req.body.productsCollection
+    //   const type = req.query?.type
+
+    //   let modifiedCount = 0;
+    //   let insertedCount = 0;
+
+    //   for (const pd of products) {
+    //     const filter = { _id: ObjectId(pd._id) };
+    //     const options = { upsert: true };
+    //     if (pd.hasOwnProperty('_id')) {
+    //       delete pd._id;
+    //     }
+    //     const update = { $set: pd }
+
+    //     let result;
+    //     if (type === 'product') {
+    //       result = await collection.updateOne(filter, update, options);
+    //       if (result.upsertedCount > 0) {
+    //         insertedCount++;
+    //         // const history = {
+    //         //   productId: result.upsertedId,
+    //         //   label: pd.label,
+    //         //   date: new Date().toISOString(),
+    //         //   user: req.query.user,
+    //         //   operation: 'insert',
+    //         //   rId: pd.rId,
+    //         //   productData: pd
+    //         // }       
+    //         // await historyCollection.insertOne(history)
+
+    //       } else if (result.modifiedCount > 0) {
+    //         modifiedCount++;
+    //       }
+    //     } else if (type === 'stock') {
+    //       result = await stockCollection.updateOne(filter, update, options);
+    //       if (result.upsertedCount > 0) {
+    //         insertedCount++;
+    //         // const history = {
+    //         //   productId: result.upsertedId,
+    //         //   label: pd.label,
+    //         //   date: new Date().toISOString(),
+    //         //   user: req.query.user,
+    //         //   operation: 'insert',
+    //         //   rId: pd.rId,
+    //         //   productData: pd
+    //         // }       
+    //         // await stockHistoryCollection.insertOne(history)
+            
+    //       } else if (result.modifiedCount > 0) {
+    //         modifiedCount++;
+    //       }
+    //     }
+    //   }
+    //   res.send({ modifiedCount, insertedCount });
+    // })
+    //add products to DB ** working
     app.post('/addProducts', async (req, res) => {
       const products = req.body.productsCollection
       const type = req.query?.type
@@ -68,42 +125,16 @@ const run = async () => {
         const update = { $set: pd }
 
         let result;
-        if (type === 'product') {
+        if(type === 'product'){
           result = await collection.updateOne(filter, update, options);
-          if (result.upsertedCount > 0) {
-            insertedCount++;
-            // const history = {
-            //   productId: result.upsertedId,
-            //   label: pd.label,
-            //   date: new Date().toISOString(),
-            //   user: req.query.user,
-            //   operation: 'insert',
-            //   rId: pd.rId,
-            //   productData: pd
-            // }       
-            // await historyCollection.insertOne(history)
-
-          } else if (result.modifiedCount > 0) {
-            modifiedCount++;
-          }
-        } else if (type === 'stock') {
+        } else if(type === 'stock'){
           result = await stockCollection.updateOne(filter, update, options);
-          if (result.upsertedCount > 0) {
-            insertedCount++;
-            // const history = {
-            //   productId: result.upsertedId,
-            //   label: pd.label,
-            //   date: new Date().toISOString(),
-            //   user: req.query.user,
-            //   operation: 'insert',
-            //   rId: pd.rId,
-            //   productData: pd
-            // }       
-            // await stockHistoryCollection.insertOne(history)
-            
-          } else if (result.modifiedCount > 0) {
-            modifiedCount++;
-          }
+        }
+
+        if (result.upsertedCount > 0) {
+          insertedCount++;
+        } else if (result.modifiedCount > 0) {
+          modifiedCount++;
         }
       }
       res.send({ modifiedCount, insertedCount });
