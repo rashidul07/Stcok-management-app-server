@@ -35,6 +35,8 @@ const run = async () => {
     const database = client.db(process.env.DB_NAME)
     const collection = database.collection("products")
     const stockCollection = database.collection("stockProducts")
+    const historyCollection = database.collection("history")
+    const stockHistoryCollection = database.collection("stockHistory")
 
     //get all product from DB ** working
     app.get("/getProducts", async (req, res) => {
@@ -66,16 +68,42 @@ const run = async () => {
         const update = { $set: pd }
 
         let result;
-        if(type === 'product'){
+        if (type === 'product') {
           result = await collection.updateOne(filter, update, options);
-        } else if(type === 'stock'){
-          result = await stockCollection.updateOne(filter, update, options);
-        }
+          if (result.upsertedCount > 0) {
+            insertedCount++;
+            const history = {
+              productId: result.upsertedId,
+              label: pd.label,
+              date: new Date().toISOString(),
+              user: req.query.user,
+              operation: 'insert',
+              rId: pd.rId,
+              productData: pd
+            }       
+            await historyCollection.insertOne(history)
 
-        if (result.upsertedCount > 0) {
-          insertedCount++;
-        } else if (result.modifiedCount > 0) {
-          modifiedCount++;
+          } else if (result.modifiedCount > 0) {
+            modifiedCount++;
+          }
+        } else if (type === 'stock') {
+          result = await stockCollection.updateOne(filter, update, options);
+          if (result.upsertedCount > 0) {
+            insertedCount++;
+            const history = {
+              productId: result.upsertedId,
+              label: pd.label,
+              date: new Date().toISOString(),
+              user: req.query.user,
+              operation: 'insert',
+              rId: pd.rId,
+              productData: pd
+            }       
+            await stockHistoryCollection.insertOne(history)
+            
+          } else if (result.modifiedCount > 0) {
+            modifiedCount++;
+          }
         }
       }
       res.send({ modifiedCount, insertedCount });
@@ -89,12 +117,55 @@ const run = async () => {
         return ObjectId(pd._id)
       })
       let result;
-      if(type === 'product'){
-        result = await collection.deleteMany({ _id: { $in: data } })
-      } else if(type === 'stock'){
-        result = await stockCollection.deleteMany({ _id: { $in: data } })
+      let deletedCount = 0;
+      if (type === 'product') {
+        for(const pd of query){
+          const history = {
+            productId: pd._id,
+            label: pd.label,
+            date: new Date().toISOString(),
+            user: req.query.user,
+            operation: 'delete',
+            rId: pd.rId,
+            productData: pd
+          }
+          result = await collection.findOneAndDelete({_id: ObjectId(pd._id)});
+          if(result.ok === 1){
+            deletedCount++;
+              await historyCollection.insertOne(history)
+          }
+        }
+      } else if (type === 'stock') {
+        for(const pd of query){
+          const history = {
+            productId: pd._id,
+            label: pd.label,
+            date: new Date().toISOString(),
+            user: req.query.user,
+            operation: 'delete',
+            rId: pd.rId,
+            productData: pd
+          }
+          result = await stockCollection.findOneAndDelete({_id: ObjectId(pd._id)});
+          if(result.ok === 1){
+            deletedCount++;
+            await stockHistoryCollection.insertOne(history)
+          }
+        }
       }
-      res.send(result)
+      res.send({ deletedCount })
+    })
+
+    //add a history to DB ** working
+    app.post('/addHistory', async (req, res) => {
+      const history = req.body
+      await historyCollection.insertMany(history)
+    })
+
+    //add a history to DB ** working
+    app.post('/addStockHistory', async (req, res) => {
+      const history = req.body
+      await stockHistoryCollection.insertMany(history)
     })
 
   } catch (error) {
