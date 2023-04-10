@@ -40,7 +40,7 @@ const run = async () => {
 
     //get all product from DB ** working
     app.get("/getProducts", async (req, res) => {
-      //get params from url
+
       const type = req.query?.type
       if (type === 'product') {
         const result = await collection.find({}).sort({ "company": 1 }).toArray()
@@ -72,16 +72,16 @@ const run = async () => {
           result = await collection.updateOne(filter, update, options);
           if (result.upsertedCount > 0) {
             insertedCount++;
-            const history = {
-              productId: result.upsertedId,
-              label: pd.label,
-              date: new Date().toISOString(),
-              user: req.query.user,
-              operation: 'insert',
-              rId: pd.rId,
-              productData: pd
-            }       
-            await historyCollection.insertOne(history)
+            // const history = {
+            //   productId: result.upsertedId,
+            //   label: pd.label,
+            //   date: new Date().toISOString(),
+            //   user: req.query.user,
+            //   operation: 'insert',
+            //   rId: pd.rId,
+            //   productData: pd
+            // }       
+            // await historyCollection.insertOne(history)
 
           } else if (result.modifiedCount > 0) {
             modifiedCount++;
@@ -90,16 +90,16 @@ const run = async () => {
           result = await stockCollection.updateOne(filter, update, options);
           if (result.upsertedCount > 0) {
             insertedCount++;
-            const history = {
-              productId: result.upsertedId,
-              label: pd.label,
-              date: new Date().toISOString(),
-              user: req.query.user,
-              operation: 'insert',
-              rId: pd.rId,
-              productData: pd
-            }       
-            await stockHistoryCollection.insertOne(history)
+            // const history = {
+            //   productId: result.upsertedId,
+            //   label: pd.label,
+            //   date: new Date().toISOString(),
+            //   user: req.query.user,
+            //   operation: 'insert',
+            //   rId: pd.rId,
+            //   productData: pd
+            // }       
+            // await stockHistoryCollection.insertOne(history)
             
           } else if (result.modifiedCount > 0) {
             modifiedCount++;
