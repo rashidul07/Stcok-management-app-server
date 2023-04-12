@@ -236,5 +236,5 @@ app.get('/', (req, res) => {
 })
 
 cron.schedule('*/10 * * * *', async () => {
-    console.log('running a task every 14 minutes');
+    console.log('running a task every 10 minutes');
 });
