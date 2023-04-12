@@ -3,6 +3,8 @@ const app = express();
 const { MongoClient } = require('mongodb');
 const cors = require("cors")
 const ObjectId = require('mongodb').ObjectId
+const cron = require('node-cron');
+
 require('dotenv').config()
 
 const port = process.env.PORT || 5000;
@@ -108,6 +110,7 @@ const run = async () => {
     //   }
     //   res.send({ modifiedCount, insertedCount });
     // })
+    
     //add products to DB ** working
     app.post('/addProducts', async (req, res) => {
       const products = req.body.productsCollection
@@ -141,6 +144,52 @@ const run = async () => {
     })
 
     //delete many product ** working
+    // app.delete('/deleteProducts', async (req, res) => {
+    //   const query = req.body
+    //   const type = req.query?.type
+    //   const data = query.map(pd => {
+    //     return ObjectId(pd._id)
+    //   })
+    //   let result;
+    //   let deletedCount = 0;
+    //   if (type === 'product') {
+    //     for(const pd of query){
+    //       const history = {
+    //         productId: pd._id,
+    //         label: pd.label,
+    //         date: new Date().toISOString(),
+    //         user: req.query.user,
+    //         operation: 'delete',
+    //         rId: pd.rId,
+    //         productData: pd
+    //       }
+    //       result = await collection.findOneAndDelete({_id: ObjectId(pd._id)});
+    //       if(result.ok === 1){
+    //         deletedCount++;
+    //           await historyCollection.insertOne(history)
+    //       }
+    //     }
+    //   } else if (type === 'stock') {
+    //     for(const pd of query){
+    //       const history = {
+    //         productId: pd._id,
+    //         label: pd.label,
+    //         date: new Date().toISOString(),
+    //         user: req.query.user,
+    //         operation: 'delete',
+    //         rId: pd.rId,
+    //         productData: pd
+    //       }
+    //       result = await stockCollection.findOneAndDelete({_id: ObjectId(pd._id)});
+    //       if(result.ok === 1){
+    //         deletedCount++;
+    //         await stockHistoryCollection.insertOne(history)
+    //       }
+    //     }
+    //   }
+    //   res.send({ deletedCount })
+    // })
+    //delete many product ** working
     app.delete('/deleteProducts', async (req, res) => {
       const query = req.body
       const type = req.query?.type
@@ -148,43 +197,12 @@ const run = async () => {
         return ObjectId(pd._id)
       })
       let result;
-      let deletedCount = 0;
-      if (type === 'product') {
-        for(const pd of query){
-          const history = {
-            productId: pd._id,
-            label: pd.label,
-            date: new Date().toISOString(),
-            user: req.query.user,
-            operation: 'delete',
-            rId: pd.rId,
-            productData: pd
-          }
-          result = await collection.findOneAndDelete({_id: ObjectId(pd._id)});
-          if(result.ok === 1){
-            deletedCount++;
-              await historyCollection.insertOne(history)
-          }
-        }
-      } else if (type === 'stock') {
-        for(const pd of query){
-          const history = {
-            productId: pd._id,
-            label: pd.label,
-            date: new Date().toISOString(),
-            user: req.query.user,
-            operation: 'delete',
-            rId: pd.rId,
-            productData: pd
-          }
-          result = await stockCollection.findOneAndDelete({_id: ObjectId(pd._id)});
-          if(result.ok === 1){
-            deletedCount++;
-            await stockHistoryCollection.insertOne(history)
-          }
-        }
+      if(type === 'product'){
+        result = await collection.deleteMany({ _id: { $in: data } })
+      } else if(type === 'stock'){
+        result = await stockCollection.deleteMany({ _id: { $in: data } })
       }
-      res.send({ deletedCount })
+      res.send(result)
     })
 
     //add a history to DB ** working
@@ -217,4 +235,6 @@ app.get('/', (req, res) => {
   res.send("Welcome to Rafi Medicine center shortlist server")
 })
 
-
+cron.schedule('*/10 * * * *', async () => {
+    console.log('running a task every 14 minutes');
+});
