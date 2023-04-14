@@ -217,6 +217,38 @@ const run = async () => {
       await stockHistoryCollection.insertMany(history)
     })
 
+    // get all history with user that is provided with query and if user is rashed@rmc.com then get all history
+    app.get('/getHistory', async (req, res) => {
+      const user = req.query?.user
+      let result;
+      if (user === 'rashed@rmc.com') {
+        result = await historyCollection.find({}).toArray()
+      } else {
+        result = await historyCollection.find({ user: user }).toArray()
+      }
+      res.send(result)
+    })
+
+    // get all history with user that is provided with query and if user is
+    app.get('/getStockHistory', async (req, res) => {
+      const user = req.query?.user
+      let result;
+      if (user === 'rashed@rmc.com') {
+        result = await stockHistoryCollection.find({}).toArray()
+      } else {
+        result = await stockHistoryCollection.find({ user: user }).toArray()
+      }
+      res.send(result)
+    })
+
+    //make a api to get just length of the stockProducts and products together length send it with a object
+    //link {products: 100, stockProducts: 100}
+    app.get('/getProductsLength', async (req, res) => {
+      const shortProduct = await collection.find({}).count()
+      const stockProductsLength = await stockCollection.find({}).count()
+      res.send({ shortProduct, stockProductsLength })
+    })
+
   } catch (error) {
     console.log(error);
     process.exit(1)
