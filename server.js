@@ -20,10 +20,10 @@ const corsOptions = {
   credentials: true,
 }
 //remove cors for development
-app.use(cors(corsOptions))
-// app.use(cors({
-//   origin: 'http://localhost:5173',
-// }));
+//app.use(cors(corsOptions))
+app.use(cors({
+  origin: 'http://localhost:5173',
+}));
 app.use(express.json())
 
 
@@ -102,7 +102,7 @@ const run = async () => {
     //         //   productData: pd
     //         // }       
     //         // await stockHistoryCollection.insertOne(history)
-            
+
     //       } else if (result.modifiedCount > 0) {
     //         modifiedCount++;
     //       }
@@ -110,7 +110,7 @@ const run = async () => {
     //   }
     //   res.send({ modifiedCount, insertedCount });
     // })
-    
+
     //add products to DB ** working
     app.post('/addProducts', async (req, res) => {
       const products = req.body.productsCollection
@@ -128,9 +128,9 @@ const run = async () => {
         const update = { $set: pd }
 
         let result;
-        if(type === 'product'){
+        if (type === 'product') {
           result = await collection.updateOne(filter, update, options);
-        } else if(type === 'stock'){
+        } else if (type === 'stock') {
           result = await stockCollection.updateOne(filter, update, options);
         }
 
@@ -197,9 +197,9 @@ const run = async () => {
         return ObjectId(pd._id)
       })
       let result;
-      if(type === 'product'){
+      if (type === 'product') {
         result = await collection.deleteMany({ _id: { $in: data } })
-      } else if(type === 'stock'){
+      } else if (type === 'stock') {
         result = await stockCollection.deleteMany({ _id: { $in: data } })
       }
       res.send(result)
@@ -249,6 +249,48 @@ const run = async () => {
       res.send({ shortProduct, stockProductsLength })
     })
 
+    // modify a product. get all data from body array and loop through the product and get all product has quantity with id and check if query type === 'product' then check the quantity if it is 0 then delete the product
+
+    app.post('/modifyProducts', async (req, res) => {
+      const products = req.body
+      const type = req.query?.type
+      console.log(type, products);
+      let modifiedCount = 0;
+      let deletedCount = 0;
+      if (type === 'product') {
+        for (const pd of products) {
+          if (pd.quantity === 0) {
+            const result = await collection.deleteOne({ _id: ObjectId(pd._id) })
+            if (result.deletedCount === 1) {
+              deletedCount++;
+            }
+          } else {
+            const filter = { _id: ObjectId(pd._id) };
+            const options = { upsert: false };
+            delete pd._id;
+            const update = { $set: pd }
+            const result = await collection.updateOne(filter, update, options);
+            if (result.modifiedCount > 0) {
+              modifiedCount++;
+            }
+          }
+        }
+      } else if (type === 'stock') {
+        for (const pd of products) {
+          const filter = { _id: ObjectId(pd._id) };
+          const options = { upsert: false };
+          delete pd._id;
+          const update = { $set: pd }
+          const result = await stockCollection.updateOne(filter, update, options);
+          if (result.modifiedCount > 0) {
+            modifiedCount++;
+          }
+        }
+      }
+      res.send({ modifiedCount, deletedCount })
+    })
+
+
   } catch (error) {
     console.log(error);
     process.exit(1)
@@ -268,5 +310,5 @@ app.get('/', (req, res) => {
 })
 
 cron.schedule('*/10 * * * *', async () => {
-    console.log('running a task every 10 minutes');
+  console.log('running a task every 10 minutes');
 });
