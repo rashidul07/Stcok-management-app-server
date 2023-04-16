@@ -20,7 +20,7 @@ const corsOptions = {
   credentials: true,
 }
 //remove cors for development
-//app.use(cors(corsOptions))
+app.use(cors(corsOptions))
 app.use(cors({
   origin: 'http://localhost:5173',
 }));
@@ -254,7 +254,6 @@ const run = async () => {
     app.post('/modifyProducts', async (req, res) => {
       const products = req.body
       const type = req.query?.type
-      console.log(type, products);
       let modifiedCount = 0;
       let deletedCount = 0;
       if (type === 'product') {
