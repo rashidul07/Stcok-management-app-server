@@ -39,6 +39,20 @@ const run = async () => {
     const stockCollection = database.collection("stockProducts")
     const historyCollection = database.collection("history")
     const stockHistoryCollection = database.collection("stockHistory")
+    
+    // const allStock = await stockCollection.find({}).toArray()
+    // //loop through all stock products and update the total price 
+    // let updateCount = 0;
+    // for(const pd of allStock){
+    //   const filter = { _id: ObjectId(pd._id) };
+    //   const options = { upsert: false };
+    //   const update = { $set: {totalPrice: pd.extraDiscountPrice * (pd.quantity + (pd.quantityHome || 0))} }
+    //   const result = await stockCollection.updateOne(filter, update, options);
+    //   if(result.modifiedCount > 0){
+    //     updateCount++
+    //   }
+    // }
+    // console.log(updateCount)
 
     //get all product from DB ** working
     app.get("/getProducts", async (req, res) => {
