@@ -20,10 +20,10 @@ const corsOptions = {
   credentials: true,
 }
 //remove cors for development
-//app.use(cors(corsOptions))
-app.use(cors({
-  origin: 'http://localhost:5173',
-}));
+app.use(cors(corsOptions))
+// app.use(cors({
+//   origin: 'http://localhost:5173',
+// }));
 app.use(express.json())
 
 
