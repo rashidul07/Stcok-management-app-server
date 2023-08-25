@@ -39,7 +39,6 @@ const run = async () => {
     const stockCollection = database.collection("stockProducts")
     const historyCollection = database.collection("history")
     const stockHistoryCollection = database.collection("stockHistory")
-    
     // const allStock = await stockCollection.find({}).toArray()
     // //loop through all stock products and update the total price 
     // let updateCount = 0;
@@ -231,30 +230,6 @@ const run = async () => {
       await stockHistoryCollection.insertMany(history)
     })
 
-    // get all history with user that is provided with query and if user is rashed@rmc.com then get all history
-    app.get('/getHistory', async (req, res) => {
-      const user = req.query?.user
-      let result;
-      if (user === 'rashed@rmc.com') {
-        result = await historyCollection.find({}).toArray()
-      } else {
-        result = await historyCollection.find({ user: user }).toArray()
-      }
-      res.send(result)
-    })
-
-    // get all history with user that is provided with query and if user is
-    app.get('/getStockHistory', async (req, res) => {
-      const user = req.query?.user
-      let result;
-      if (user === 'rashed@rmc.com') {
-        result = await stockHistoryCollection.find({}).toArray()
-      } else {
-        result = await stockHistoryCollection.find({ user: user }).toArray()
-      }
-      res.send(result)
-    })
-
     //make a api to get just length of the stockProducts and products together length send it with a object
     //link {products: 100, stockProducts: 100}
     app.get('/getProductsLength', async (req, res) => {
@@ -304,6 +279,55 @@ const run = async () => {
     })
 
 
+    app.get('/getHistory', async (req, res) => {
+      try {
+        const { email, count, type, page } = req.query;
+    
+        if (!count || !type || !page) {
+          return res.status(400).send('"count", "type", and "page" query parameters are required.');
+        }
+    
+        const parsedCount = parseInt(count, 10);
+        const parsedPage = parseInt(page, 10);
+    
+        if (isNaN(parsedCount) || parsedCount <= 0 || isNaN(parsedPage) || parsedPage <= 0) {
+          return res.status(400).send('Invalid "count" or "page" value.');
+        }
+    
+        const itemsPerPage = parsedCount;
+        const skipItems = (parsedPage - 1) * itemsPerPage;
+    
+        let collectionToSearch;
+        if (type === 'stock') {
+          collectionToSearch = stockHistoryCollection;
+        } else if (type === 'short') {
+          collectionToSearch = historyCollection;
+        } else {
+          return res.status(400).send('Invalid "type" value. Use "stockProduct" or "stock".');
+        }
+        console.log(email)
+        let query = {};
+        if (email !== 'rashed@rmc.com') {
+          query.user = email;
+        }
+    
+        const historyCount = await collectionToSearch.countDocuments(query);
+        const historyData = await collectionToSearch.find(query)
+          .sort({ date: -1 })
+          .skip(skipItems)
+          .limit(itemsPerPage)
+          .toArray();
+    
+        res.send({ historyCount, historyData });
+      } catch (error) {
+        console.error('Error fetching history data:', error);
+        res.status(500).send('Internal Server Error');
+      }
+    });
+    
+
+
+
   } catch (error) {
     console.log(error);
     process.exit(1)
@@ -325,3 +349,25 @@ app.get('/', (req, res) => {
 cron.schedule('*/14 * * * *', async () => {
   console.log('running a task every 10 minutes');
 });
+
+async function deleteOldRecords() {
+  try {
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
+    // Delete from history collection
+    const resultHistory = await client.db(process.env.DB_NAME).collection("history").deleteMany({ date: { $lt: tenDaysAgo.toISOString() } });
+    console.log(`Deleted ${resultHistory.deletedCount} old records from history collection.`);
+
+    // Delete from stockHistory collection
+    const resultStockHistory = await client.db(process.env.DB_NAME).collection("stockHistory").deleteMany({ date: { $lt: tenDaysAgo.toISOString() } });
+    console.log(`Deleted ${resultStockHistory.deletedCount} old records from stockHistory collection.`);
+  } catch (error) {
+    console.error('Error while deleting old records:', error);
+  }
+}
+
+cron.schedule('0 0 * * *', deleteOldRecords);
+
+
+
