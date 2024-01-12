@@ -8,7 +8,7 @@ const cron = require('node-cron');
 require('dotenv').config()
 
 const port = process.env.PORT || 5000;
-const whitelist = ["https://rafimeds.web.app"]
+const whitelist = ["https://mrhdrugs.web.app/"]
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.indexOf(origin) !== -1) {
@@ -20,15 +20,15 @@ const corsOptions = {
   credentials: true,
 }
 //remove cors for development
-app.use(cors(corsOptions))
-// app.use(cors({
-//   origin: 'http://localhost:5173',
-// }));
+// app.use(cors(corsOptions))
+app.use(cors({
+  origin: 'http://localhost:5173',
+}));
 app.use(express.json())
 
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wbvsa.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
-
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wbvsa.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bxirnkb.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
 const run = async () => {
